@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">YandexMaps</string>
+    <string name="traffic_visibility_button">Traffic Visibility Button</string>
+    <string name="location_button">Location Button</string>
+    <string name="minus_zoom_button">Minus Zoom Button</string>
+    <string name="plus_zoom_button">Plus Zoom Button</string>
+    <string name="on_or_off_traffic_button">ON or OFF traffic button</string>
+    <string name="name_point">Enter point name</string>
+    <string name="to_points">To points</string>
+    <string name="delete">DELETE</string>
+    <string name="edit">EDIT</string>
+    <string name="empty">Empty</string>
+    <string name="placemark">placemark</string>
+</resources>
