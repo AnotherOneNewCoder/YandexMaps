@@ -6,11 +6,18 @@ import android.graphics.PointF
 import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.coroutineScope
+import androidx.navigation.fragment.findNavController
 import com.yandex.mapkit.Animation
 
 import com.yandex.mapkit.MapKit
@@ -20,14 +27,19 @@ import com.yandex.mapkit.layers.ObjectEvent
 import com.yandex.mapkit.map.CameraPosition
 import com.yandex.mapkit.map.InputListener
 import com.yandex.mapkit.map.Map
+import com.yandex.mapkit.map.MapObjectTapListener
 import com.yandex.mapkit.mapview.MapView
 import com.yandex.mapkit.user_location.UserLocationLayer
 import com.yandex.mapkit.user_location.UserLocationObjectListener
 import com.yandex.mapkit.user_location.UserLocationView
+import com.yandex.runtime.ui_view.ViewProvider
+import kotlinx.coroutines.flow.collectLatest
 import ru.netology.yandexmaps.R
 import ru.netology.yandexmaps.databinding.MapFragmentBinding
+import ru.netology.yandexmaps.databinding.PointBinding
 import ru.netology.yandexmaps.utils.CommonUtils.showToast
 import ru.netology.yandexmaps.utils.CommonUtils.createBitmapFromVector
+import ru.netology.yandexmaps.viewmodel.YandexMapViewModel
 
 
 class MapFragment : Fragment(), UserLocationObjectListener, InputListener {
@@ -47,6 +59,12 @@ class MapFragment : Fragment(), UserLocationObjectListener, InputListener {
         // временные точки для теста
         private val START_ANIMATION = Animation(Animation.Type.LINEAR, 1f)
         private val START_POSITION = CameraPosition(Point(54.707590, 20.508898), 15f, 0f, 0f)
+    }
+
+    private val viewModel by viewModels<YandexMapViewModel>()
+    private val pointTapListener = MapObjectTapListener { mapObject, _ ->
+        viewModel.deleteById(mapObject.userData as Long)
+        true
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -70,9 +88,49 @@ class MapFragment : Fragment(), UserLocationObjectListener, InputListener {
         userLocation = mapKit.createUserLocationLayer(mapWindow)
         val probki = mapKit.createTrafficLayer(mapWindow)
         userLocation.setObjectListener(this)
+        map.addInputListener(this)
 
         var OnOffTraffic = false
         var OnOffUserLocation = false
+
+        val pointCollection = map.mapObjects.addCollection()
+        viewLifecycleOwner.lifecycle.coroutineScope.launchWhenCreated {
+            viewModel.points.collectLatest { points ->
+                pointCollection.clear()
+                points.forEach {
+                    val pointBinding = PointBinding.inflate(layoutInflater)
+                    pointBinding.title.text = it.title
+                    pointCollection.addPlacemark(
+                        Point(it.lat, it.long),
+                        ViewProvider(pointBinding.root)
+                    ).apply {
+                        userData = it.id
+                    }
+                }
+            }
+        }
+        pointCollection.addTapListener(pointTapListener)
+
+
+        val arguments = arguments
+        if (arguments != null &&
+            arguments.containsKey(LAT_KEY) &&
+            arguments.containsKey(LONG_KEY)
+        ) {
+            val cameraPosition = map.cameraPosition
+            map.move(
+                CameraPosition(
+                    Point(arguments.getDouble(LAT_KEY), arguments.getDouble(LONG_KEY)),
+                    10F,
+                    cameraPosition.azimuth,
+                    cameraPosition.tilt,
+                )
+            )
+            arguments.remove(LAT_KEY)
+            arguments.remove(LONG_KEY)
+        }
+
+
 
 
 
@@ -135,6 +193,21 @@ class MapFragment : Fragment(), UserLocationObjectListener, InputListener {
                 }
             }
         }
+        requireActivity().addMenuProvider(object : MenuProvider{
+            override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
+                menuInflater.inflate(R.menu.map_menu, menu)
+            }
+
+            override fun onMenuItemSelected(menuItem: MenuItem): Boolean =
+                if (menuItem.itemId == R.id.list) {
+                    findNavController().navigate(R.id.action_mapFragment_to_pointFragment)
+                    true
+
+                } else {
+                    false
+                }
+
+        }, viewLifecycleOwner)
 
         return binding.root
     }
@@ -206,11 +279,10 @@ class MapFragment : Fragment(), UserLocationObjectListener, InputListener {
         Unit
     }
 
-    override fun onMapTap(map: Map, point: Point) {
-        TODO("Not yet implemented")
-    }
+    override fun onMapTap(map: Map, point: Point) = Unit
 
     override fun onMapLongTap(map: Map, point: Point) {
-        TODO("Not yet implemented")
+        Dialog.newInstance(lat = point.latitude, long = point.longitude)
+            .show(childFragmentManager, null)
     }
 }

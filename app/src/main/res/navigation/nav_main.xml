@@ -7,5 +7,26 @@
     <fragment
         android:id="@+id/mapFragment"
         android:name="ru.netology.yandexmaps.activities.MapFragment"
-        android:label="MapFragment" />
+        android:label="MapFragment" >
+        <action
+            android:id="@+id/action_mapFragment_to_pointFragment"
+            app:destination="@id/pointFragment"
+            app:enterAnim="@android:anim/fade_in"
+            app:exitAnim="@android:anim/fade_out"
+            app:popEnterAnim="@android:anim/fade_in"
+            app:popExitAnim="@android:anim/fade_out" />
+    </fragment>
+    <fragment
+        android:id="@+id/pointFragment"
+        android:name="ru.netology.yandexmaps.activities.PointFragment"
+        android:label="PointFragment" >
+        <action
+            android:id="@+id/action_pointFragment_to_mapFragment"
+            app:destination="@id/mapFragment"
+            app:enterAnim="@android:anim/fade_in"
+            app:exitAnim="@android:anim/fade_out"
+            app:popEnterAnim="@android:anim/fade_in"
+            app:popExitAnim="@android:anim/fade_out"
+            app:popUpTo="@id/mapFragment" />
+    </fragment>
 </navigation>

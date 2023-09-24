@@ -6,7 +6,10 @@ import android.widget.Toast
 import androidx.appcompat.widget.AppCompatEditText
 import androidx.core.os.bundleOf
 import androidx.fragment.app.DialogFragment
+import androidx.fragment.app.viewModels
 import ru.netology.yandexmaps.R
+import ru.netology.yandexmaps.dto.Point
+import ru.netology.yandexmaps.viewmodel.YandexMapViewModel
 
 class Dialog : DialogFragment() {
 
@@ -20,7 +23,8 @@ class Dialog : DialogFragment() {
     }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): android.app.Dialog {
-        return super.onCreateDialog(savedInstanceState)
+
+        val viewModel by viewModels<YandexMapViewModel>()
         val view = AppCompatEditText(requireContext())
         return AlertDialog.Builder(requireContext())
             .setView(view)
@@ -30,6 +34,12 @@ class Dialog : DialogFragment() {
                     Toast.makeText(requireContext(), "Enter the name!", Toast.LENGTH_SHORT).show()
                     return@setPositiveButton
                 }
+                viewModel.addPoint(
+                    Point(id =  requireArguments().getLong(ID_KEY),
+                        lat = requireArguments().getDouble(LAT_KEY),
+                        long = requireArguments().getDouble(LONG_KEY),
+                        title = text)
+                )
             }.create()
     }
 }

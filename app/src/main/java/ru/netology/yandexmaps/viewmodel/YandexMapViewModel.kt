@@ -17,12 +17,12 @@ class YandexMapViewModel(application: Application): AndroidViewModel(application
         it.map(PointEntity::toDto)
     }
 
-    suspend fun deleteById(id: Long) {
+    fun deleteById(id: Long) {
         viewModelScope.launch {
             dao.deleteById(id)
         }
     }
-    suspend fun addPoint(point: Point) {
+    fun addPoint(point: Point) {
         viewModelScope.launch{
             dao.insert(PointEntity.fromDto(point))
         }

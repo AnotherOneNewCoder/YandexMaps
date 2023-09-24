@@ -13,8 +13,8 @@ interface PointDao {
     fun getAll(): Flow<List<PointEntity>>
 
     @Query("DELETE FROM Pointentity WHERE id = :id")
-    suspend fun deleteById(id: Long)
+    suspend fun deleteById(id: Long): Unit
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insert(point: PointEntity)
+    suspend fun insert(point: PointEntity): Unit
 }
