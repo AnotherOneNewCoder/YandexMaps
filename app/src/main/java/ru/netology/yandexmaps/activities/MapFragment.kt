@@ -3,23 +3,17 @@ package ru.netology.yandexmaps.activities
 import android.Manifest
 import android.content.pm.PackageManager
 import android.graphics.PointF
-import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.view.LayoutInflater
-import android.view.Menu
-import android.view.MenuInflater
-import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.coroutineScope
 import androidx.navigation.fragment.findNavController
 import com.yandex.mapkit.Animation
-
 import com.yandex.mapkit.MapKit
 import com.yandex.mapkit.MapKitFactory
 import com.yandex.mapkit.geometry.Point
@@ -38,16 +32,15 @@ import ru.netology.yandexmaps.R
 import ru.netology.yandexmaps.databinding.MapFragmentBinding
 import ru.netology.yandexmaps.databinding.PointBinding
 import ru.netology.yandexmaps.utils.CommonUtils.showToast
-import ru.netology.yandexmaps.utils.CommonUtils.createBitmapFromVector
 import ru.netology.yandexmaps.viewmodel.YandexMapViewModel
 
 
 class MapFragment : Fragment(), UserLocationObjectListener, InputListener {
 
-    lateinit var binding: MapFragmentBinding
-    lateinit var map: Map
-    lateinit var userLocation: UserLocationLayer
-    lateinit var mapView: MapView
+    private lateinit var binding: MapFragmentBinding
+    private lateinit var map: Map
+    private lateinit var userLocation: UserLocationLayer
+    private lateinit var mapView: MapView
 
 
     companion object {
@@ -62,6 +55,8 @@ class MapFragment : Fragment(), UserLocationObjectListener, InputListener {
     }
 
     private val viewModel by viewModels<YandexMapViewModel>()
+
+    // удаление метки на карте
     private val pointTapListener = MapObjectTapListener { mapObject, _ ->
         viewModel.deleteById(mapObject.userData as Long)
         true
@@ -78,20 +73,20 @@ class MapFragment : Fragment(), UserLocationObjectListener, InputListener {
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         binding = MapFragmentBinding.inflate(inflater, container, false)
         val mapWindow = binding.mapView.mapWindow
         map = mapWindow.map
         mapView = binding.mapView
         val mapKit: MapKit = MapKitFactory.getInstance()
-        requstLocationPermission()
+        requestLocationPermission()
         userLocation = mapKit.createUserLocationLayer(mapWindow)
         val probki = mapKit.createTrafficLayer(mapWindow)
         userLocation.setObjectListener(this)
         map.addInputListener(this)
 
-        var OnOffTraffic = false
-        var OnOffUserLocation = false
+        var onOffTraffic = false
+        var onOffUserLocation = false
 
         val pointCollection = map.mapObjects.addCollection()
         viewLifecycleOwner.lifecycle.coroutineScope.launchWhenCreated {
@@ -110,8 +105,7 @@ class MapFragment : Fragment(), UserLocationObjectListener, InputListener {
             }
         }
         pointCollection.addTapListener(pointTapListener)
-
-
+        // переход камеры к точке
         val arguments = arguments
         if (arguments != null &&
             arguments.containsKey(LAT_KEY) &&
@@ -137,11 +131,14 @@ class MapFragment : Fragment(), UserLocationObjectListener, InputListener {
         binding.apply {
             minus.setOnClickListener { changeZoomByStep(-ZOOM_STEP) }
             plus.setOnClickListener { changeZoomByStep(ZOOM_STEP) }
+            dataBase.setOnClickListener {
+                findNavController().navigate(R.id.action_mapFragment_to_pointFragment)
+            }
             probkibtn.setOnClickListener {
-                when (OnOffTraffic) {
+                when (onOffTraffic) {
                     true -> {
                         probki.isTrafficVisible = false
-                        OnOffTraffic = false
+                        onOffTraffic = false
                         val drawable = ContextCompat.getDrawable(requireContext(), R.color.grey)
                         cardTraffic.foreground = drawable
 
@@ -149,7 +146,7 @@ class MapFragment : Fragment(), UserLocationObjectListener, InputListener {
 
                     false -> {
                         probki.isTrafficVisible = true
-                        OnOffTraffic = true
+                        onOffTraffic = true
                         val drawable = ContextCompat.getDrawable(requireContext(), R.color.yellow)
                         cardTraffic.foreground = drawable
 
@@ -157,12 +154,12 @@ class MapFragment : Fragment(), UserLocationObjectListener, InputListener {
                 }
             }
             location.setOnClickListener {
-                when (OnOffUserLocation) {
+                when (onOffUserLocation) {
                     true -> {
 
                         userLocation.isVisible = false
                         userLocation.isHeadingEnabled = false
-                        OnOffUserLocation = false
+                        onOffUserLocation = false
                     }
 
                     false -> {
@@ -187,32 +184,18 @@ class MapFragment : Fragment(), UserLocationObjectListener, InputListener {
                             ) { requireContext().showToast("Initial camera move") }
                         }
 
-                        OnOffUserLocation = true
+                        onOffUserLocation = true
                     }
 
                 }
             }
         }
-        requireActivity().addMenuProvider(object : MenuProvider{
-            override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
-                menuInflater.inflate(R.menu.map_menu, menu)
-            }
 
-            override fun onMenuItemSelected(menuItem: MenuItem): Boolean =
-                if (menuItem.itemId == R.id.list) {
-                    findNavController().navigate(R.id.action_mapFragment_to_pointFragment)
-                    true
-
-                } else {
-                    false
-                }
-
-        }, viewLifecycleOwner)
 
         return binding.root
     }
-
-    private fun requstLocationPermission() {
+    // запрос разрешений
+    private fun requestLocationPermission() {
         if (ActivityCompat.checkSelfPermission(
                 requireContext(),
                 Manifest.permission.ACCESS_FINE_LOCATION
@@ -233,7 +216,7 @@ class MapFragment : Fragment(), UserLocationObjectListener, InputListener {
             return
         }
     }
-
+    //приближение/отдаление камеры
     private fun changeZoomByStep(value: Float) {
         with(map.cameraPosition) {
             map.move(
@@ -257,7 +240,7 @@ class MapFragment : Fragment(), UserLocationObjectListener, InputListener {
         MapKitFactory.getInstance().onStop()
 
     }
-
+    // отображение местоположения
     override fun onObjectAdded(userLocationView: UserLocationView) {
         userLocation.setAnchor(
             PointF(mapView.width * 0.5F, mapView.height * 0.5F),
@@ -276,11 +259,11 @@ class MapFragment : Fragment(), UserLocationObjectListener, InputListener {
     }
 
     override fun onObjectUpdated(userLocationView: UserLocationView, objectEvent: ObjectEvent) {
-        Unit
+
     }
 
     override fun onMapTap(map: Map, point: Point) = Unit
-
+    // добавление точки при длительном удержании на карте
     override fun onMapLongTap(map: Map, point: Point) {
         Dialog.newInstance(lat = point.latitude, long = point.longitude)
             .show(childFragmentManager, null)
